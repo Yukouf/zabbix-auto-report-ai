@@ -1,0 +1,11 @@
+# Secrets : ne JAMAIS committer
+.env
+
+# Sorties générées
+rapports/
+*.xlsx
+recurrence_state.json
+
+# Python
+__pycache__/
+*.pyc
