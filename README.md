@@ -200,7 +200,7 @@ Ajoutez vos propres fiches au fil des alertes rencontrées : c'est ainsi que le 
 
 **Youssef Guerniou** — [github.com/Yukouf](https://github.com/Yukouf)
 
-Projet développé dans le cadre d'un déploiement SOC/supervision en production. Voir aussi : [Wazuh-CVE-Alerter](https://github.com/Yukouf/Wazuh-CVE-Alerter).
+Projet développé dans le cadre d'un déploiement SOC/supervision en production. Voir aussi : [Wazuh-CVE-Alerter](https://github.com/Yukouf/wazuh-cve-alerter-mail).
 
 ## 📄 Licence
 
