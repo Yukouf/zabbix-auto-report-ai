@@ -60,17 +60,9 @@ C'est ce qui transforme une simple liste d'alertes en véritable outil de pilota
 
 C'est le cœur du projet, et son architecture est volontairement **déterministe d'abord, IA ensuite** :
 
-```mermaid
-flowchart LR
-    A[Alerte Zabbix] --> B{Motif connu du<br>référentiel ?}
-    B -- "Oui (cas majoritaire)" --> C[📋 Fiche de réponse<br>écrite et validée<br>par un humain]
-    B -- Non --> D[🤖 IA locale Ollama<br>consignes strictes<br>diagnostic uniquement]
-    C --> E[Rapport Excel]
-    D --> E
-    A --> F{Windows, Linux<br>ou switch ?}
-    F -.->|OS imposé| C
-    F -.->|OS imposé| D
-```
+![Architecture réelle de Zabbix Auto Report](assets/architecture.svg)
+
+Le script récupère les hôtes, disponibilités, problèmes et triggers via JSON-RPC. Après filtrage, chaque alerte passe d’abord dans le référentiel humain ; Ollama local n’intervient qu’en l’absence de motif connu. Le classeur et l’état de récurrence sont écrits localement, puis l’envoi SMTP peut être désactivé avec `--no-email`.
 
 ### 1. Le référentiel déterministe (source principale)
 
