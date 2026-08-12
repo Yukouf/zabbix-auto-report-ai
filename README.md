@@ -109,8 +109,8 @@ Si aucune fiche ne correspond, le script interroge un modèle **Ollama hébergé
 
 ```bash
 # 1. Cloner le dépôt
-git clone https://github.com/Yukouf/zabbix-auto-report.git
-cd zabbix-auto-report
+git clone https://github.com/Yukouf/zabbix-auto-report-ai.git
+cd zabbix-auto-report-ai
 
 # 2. Installer la dépendance (unique !)
 pip install openpyxl

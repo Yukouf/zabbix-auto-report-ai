@@ -14,7 +14,7 @@ Configuration : via variables d'environnement ou fichier .env (voir .env.example
 Dépendance unique : openpyxl. Tout le reste est en bibliothèque standard Python.
 """
 
-import json, urllib.request, ssl, smtplib, os, sys, re
+import json, argparse, urllib.request, ssl, smtplib, os, sys, re
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -47,6 +47,10 @@ def _env(name, default=""):
     return os.environ.get(name, default).strip()
 
 ZABBIX_URL = _env("ZABBIX_URL", "https://zabbix.example.local/api_jsonrpc.php")
+# Normalisation : l'utilisateur peut donner "https://host" ou "https://host/" ;
+# on complète avec le chemin API Zabbix si absent, pour éviter une erreur 404.
+if not ZABBIX_URL.rstrip("/").endswith("/api_jsonrpc.php"):
+    ZABBIX_URL = ZABBIX_URL.rstrip("/") + "/api_jsonrpc.php"
 ZABBIX_USER = _env("ZABBIX_USER", "rapport-auto")
 ZABBIX_PASS = _env("ZABBIX_PASS")
 VERIFY_SSL = _env("VERIFY_SSL", "false").lower() == "true"
@@ -265,7 +269,9 @@ CONTRAINTES STRICTES :
 # et à défaut on tombe sur l'IA (avec contrainte OS).
 COMMAND_TABLE = [
     {   # Agent Zabbix indisponible (AVANT 'service' : réseau/firewall, jamais màj package)
-        "patterns": ["agent is not available", "agent not available"],
+        "patterns": ["agent is not available", "agent not available",
+                     "agent is unavailable", "agent unavailable",
+                     "is unreachable", "zabbix agent on"],
         "commands": {
             "Windows": "L'agent Zabbix ne répond plus (en général réseau ou service, pas une mise à jour).\n1) Vérifier que le service tourne :\nGet-Service 'Zabbix Agent*'\n2) Tester l'accès réseau au port de l'agent :\nTest-NetConnection <serveur-zabbix> -Port 10050\nPuis : si le test échoue, ouvrir le port 10050 dans le pare-feu de l'hôte.",
             "Linux":   "L'agent Zabbix ne répond plus (en général réseau ou service, pas une mise à jour).\n1) Vérifier que le service tourne :\nsystemctl status zabbix-agent2\n2) Vérifier que le port 10050 écoute :\nss -lntp | grep 10050\nPuis : si rien n'écoute, redémarrer l'agent ; sinon ouvrir le port 10050 (firewalld/nftables).",
@@ -332,8 +338,8 @@ COMMAND_TABLE = [
             "Linux":   "L'horloge de la machine n'est plus synchronisée.\n1) Voir l'état de synchro :\ntimedatectl status\n2) Forcer une resynchronisation :\nchronyc makestep\nPuis : si besoin, redémarrer le service : systemctl restart chronyd.",
         },
     },
-    {   # Imprimante / consommable
-        "patterns": ["toner", "imp ", "printer", "cartridge", "drum"],
+    {   # Imprimante / consommable (couvre aussi les hôtes nommés IMP-xx)
+        "patterns": ["toner", "imp-", "imp ", "printer", "cartridge", "drum"],
         "commands": {
             "*": "Problème de consommable sur une imprimante.\nVérification manuelle sur place : niveau du toner/tambour et état physique de l'imprimante.\nPuis : remplacer le consommable si nécessaire.",
         },
@@ -390,7 +396,7 @@ def classify_host(host_name, hosts_data):
                 if h["interfaces"][0].get("type") in NETWORK_AGENTS: return "Reseau"
     if name_lower.startswith("pc") or name_lower.startswith("hpmx"):
         return "Poste"
-    if name_lower.startswith("imp "):
+    if name_lower.startswith("imp-") or name_lower.startswith("imp "):
         return "Peripherique"
     return "Serveur"
 
@@ -787,18 +793,44 @@ def send_email(filepath, filename):
     except Exception as e:
         print(f"[ERREUR] Email: {e}")
 
-def main():
+def build_arg_parser():
+    """Construit le parser argparse (sans effet de bord, testable)."""
+    p = argparse.ArgumentParser(
+        prog="zabbix_auto_report",
+        description="Génère le rapport Zabbix hebdomadaire Excel (référentiel déterministe "
+                    "+ IA locale Ollama pour les cas inconnus). Aucune donnée ne quitte le serveur.",
+        epilog="Configuration : variables d'environnement ou fichier .env (voir .env.example).",
+    )
+    p.add_argument("--no-email", action="store_true",
+                   help="génère le rapport sans envoyer d'email (utile pour les tests)")
+    p.add_argument("--test-email", action="store_true",
+                   help="envoie un email de test via la configuration SMTP puis s'arrête "
+                        "(aucun appel Zabbix / Ollama)")
+    return p
+
+
+def main(argv=None):
+    args = build_arg_parser().parse_args(argv)
+
     os.makedirs(REPORT_DIR, exist_ok=True)
-    if "--test-email" in sys.argv:
+
+    # --test-email : envoi d'un email de test sans aucune connexion sortante Zabbix.
+    if args.test_email:
         print("Test d'envoi d'email...")
+        if not SMTP_SERVER or not SMTP_USER:
+            print("[ERREUR] SMTP non configuré (SMTP_SERVER/SMTP_USER vides).")
+            return 1
+        msg = MIMEMultipart(); msg['From'] = SMTP_FROM; msg['To'] = ", ".join(EMAIL_TO); msg['Subject'] = "Test - Rapport Zabbix (IA)"
+        msg.attach(MIMEText("Test avec recommandations IA. Configuration OK.", 'plain', 'utf-8'))
         try:
-            msg = MIMEMultipart(); msg['From'] = SMTP_FROM; msg['To'] = ", ".join(EMAIL_TO); msg['Subject'] = "Test - Rapport Zabbix (IA)"
-            msg.attach(MIMEText("Test avec recommandations IA. Configuration OK.", 'plain', 'utf-8'))
             with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
                 server.login(SMTP_USER, SMTP_PASS); server.sendmail(SMTP_SENDER, EMAIL_TO, msg.as_string())
             print("[OK] Email de test envoyé !")
-        except Exception as e: print(f"[ERREUR] {e}")
-        return
+            return 0
+        except Exception as e:
+            print(f"[ERREUR] {e}")
+            return 1
+
     print("Vérification Ollama...", end=" ", flush=True)
     try:
         test = ask_ollama("Reponds OK")
@@ -820,9 +852,11 @@ def main():
     wb = generate_report(hosts, problems, triggers_map, availability)
     filename = f"rapport_zabbix_{datetime.now().strftime('%Y-%m-%d')}.xlsx"; filepath = os.path.join(REPORT_DIR, filename)
     wb.save(filepath); print(f"[OK] Rapport: {filepath}")
-    if "--no-email" not in sys.argv:
+    if not args.no_email:
         print("Envoi par email..."); send_email(filepath, filename)
     print("\nTermine !")
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
