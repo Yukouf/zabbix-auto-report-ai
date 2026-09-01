@@ -1,4 +1,5 @@
 # 📊 Zabbix Auto Report
+[![Security](https://github.com/Yukouf/zabbix-auto-report-ai/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Yukouf/zabbix-auto-report-ai/actions/workflows/security-scan.yml)
 
 > Rapport de supervision hebdomadaire en Excel, généré automatiquement depuis Zabbix, avec recommandations de diagnostic prêtes à l'emploi — sans qu'aucune donnée ne quitte votre serveur.
 
