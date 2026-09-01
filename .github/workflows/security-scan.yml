@@ -1,0 +1,60 @@
+name: Security scan (SAST + SCA + secrets)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"   # scan hebdo automatique (lundi 6h)
+
+jobs:
+  security:
+    name: Contrôles de sécurité
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # nécessaire pour Gitleaks (historique complet)
+
+      # ── 1. SAST : analyse du code Python (Semgrep) ─────────────────
+      # Semgrep tourne en conteneur, aucun token requis. Gate : échec si
+      # des findings de sévérité ERROR sont trouvés.
+      - name: SAST — Semgrep
+        run: |
+          docker run --rm -v "${PWD}:/src" returntocorp/semgrep semgrep scan \
+            --config=auto --error /src || { echo "SAST: vulnérabilités détectées"; exit 1; }
+
+      # ── 2. SCA : dépendances vulnérables (pip-audit) ──────────────
+      - name: SCA — pip-audit (dépendances)
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+          if [ -f requirements.txt ]; then
+            pip-audit -r requirements.txt --desc on
+          else
+            echo "Pas de requirements.txt — scan SCA ignoré"
+          fi
+
+      # ── 3. Secrets : clés commitées par erreur (Gitleaks) ─────────
+      - name: Secrets — Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── 4. Containers : image Docker (Trivy) — seulement si Dockerfile ─
+  container-scan:
+    name: Scan image Docker (Trivy)
+    runs-on: ubuntu-latest
+    if: hashFiles('Dockerfile') != ''
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t app:test .
+      - name: Trivy — scan de l'image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: app:test
+          format: table
+          exit-code: '1'            # ← LA GATE : échoue si vulnérabilité critique
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
