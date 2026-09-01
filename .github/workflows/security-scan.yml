@@ -12,7 +12,7 @@ jobs:
     name: Contrôles de sécurité
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0   # nécessaire pour Gitleaks (historique complet)
 
@@ -37,7 +37,7 @@ jobs:
 
       # ── 3. Secrets : clés commitées par erreur (Gitleaks) ─────────
       - name: Secrets — Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -46,13 +46,13 @@ jobs:
     name: Scan image Docker (Trivy)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Build image
         if: hashFiles('Dockerfile') != ''
         run: docker build -t app:test .
       - name: Trivy — scan de l'image
         if: hashFiles('Dockerfile') != ''
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@d2a0b60797ff03db6132bd4e2b293f9b37081297
         with:
           image-ref: app:test
           format: table
