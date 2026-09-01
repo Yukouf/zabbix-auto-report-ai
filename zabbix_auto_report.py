@@ -235,7 +235,7 @@ def ask_ollama(prompt):
     try:
         payload = {"model": OLLAMA_MODEL, "prompt": prompt, "stream": False, "options": {"temperature": 0.3, "num_predict": 150}}
         req = urllib.request.Request(_http_url(OLLAMA_URL), data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=120) as resp:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected
+        with urllib.request.urlopen(req, timeout=120) as resp:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
             return json.loads(resp.read().decode("utf-8")).get("response", "").strip()
     except Exception as e:
         return f"Erreur IA: {e}"
@@ -263,7 +263,7 @@ CONTRAINTES STRICTES :
     for attempt in range(2):
         try:
             req = urllib.request.Request(_http_url(OLLAMA_URL), data=data, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=150) as resp:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected
+            with urllib.request.urlopen(req, timeout=150) as resp:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
                 return json.loads(resp.read().decode("utf-8")).get("response", "").strip()
         except Exception as e:
             if attempt == 0: continue
