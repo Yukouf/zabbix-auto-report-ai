@@ -1,7 +1,12 @@
 # 📊 Zabbix Auto Report
 [![Security](https://github.com/Yukouf/zabbix-auto-report-ai/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Yukouf/zabbix-auto-report-ai/actions/workflows/security-scan.yml)
 
-> Rapport de supervision hebdomadaire en Excel, généré automatiquement depuis Zabbix, avec recommandations de diagnostic prêtes à l'emploi — sans qu'aucune donnée ne quitte votre serveur.
+<p align="center">
+  <a href="README.md">English</a> &bull;
+  <a href="README_fr.md">Français</a>
+</p>
+
+> Weekly monitoring report in Excel, generated automatically from Zabbix, with ready-to-use diagnostic recommendations, and no data leaving the server.
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
 ![Zabbix](https://img.shields.io/badge/Zabbix-6.0%20%E2%86%92%207.x-d40000?logo=zabbix&logoColor=white)
@@ -11,118 +16,118 @@
 
 ---
 
-## 🎯 Le problème résolu
+## 🎯 The problem solved
 
-Zabbix supervise très bien, mais **personne ne lit une interface de supervision le lundi matin**. Les équipes IT et les managers veulent une réponse simple à trois questions :
+Zabbix monitors very well, but **nobody reads a monitoring interface on Monday morning**. IT teams and managers want a simple answer to three questions:
 
-1. Qu'est-ce qui est cassé cette semaine ?
-2. Est-ce nouveau, ou est-ce que ça traîne depuis un mois ?
-3. Qu'est-ce qu'on fait concrètement pour chaque problème ?
+1. What is broken this week?
+2. Is it new, or has it been dragging on for a month?
+3. What concrete action is taken for each problem?
 
-Ce script répond aux trois, dans un fichier Excel envoyé par email chaque semaine, lisible aussi bien par un technicien que par un responsable non technique.
+This script answers all three, in an Excel file sent by email every week, readable by both a technician and a non-technical manager.
 
 ---
 
-## 👀 Aperçu
+## 👀 Overview
 
-| Page 1 — Rapport hebdo | Onglet Analyse |
+| Page 1, Weekly Report | Analysis Tab |
 |---|---|
-| ![Rapport hebdo](docs/screenshot_rapport.png) | ![Analyse](docs/screenshot_analyse.png) |
+| ![Weekly report](docs/screenshot_rapport.png) | ![Analysis](docs/screenshot_analyse.png) |
 
-*(Captures à partir de données de démonstration.)*
+*(Screenshots from demonstration data.)*
 
 ---
 
-## ✨ Ce que contient le rapport
+## ✨ What the report contains
 
-Le fichier Excel généré comporte **5 onglets** :
+The generated Excel file contains **5 tabs**:
 
-| Onglet | Contenu |
+| Tab | Content |
 |---|---|
-| **Rapport Hebdo** | Indicateurs clés (hôtes, disponibilité, alertes, critiques, nouvelles), ligne d'évolution vs rapport précédent, puis les alertes classées par catégorie (serveurs, réseau, postes, périphériques) avec sévérité, ancienneté, acquittement et **recommandation de diagnostic** |
-| **Inventaire Hôtes** | Tous les hôtes supervisés : IP, groupes, état, disponibilité, type |
-| **Alertes filtrées** | Le bruit écarté du rapport (et pourquoi), pour la transparence |
-| **Analyse** | Équipements probablement hors réseau, problèmes réels priorisés par ancienneté, **alertes résolues depuis le dernier rapport**, **tendance sur 12 semaines**, répartition par sujet |
-| **Fonctionnement** | Explication en français simple, destinée aux non-techniciens, de la façon dont les recommandations sont produites |
+| **Weekly Report** | Key indicators (hosts, availability, alerts, critical, new), a trend line versus the previous report, then alerts sorted by category (servers, network, workstations, peripherals) with severity, age, acknowledgement and **diagnostic recommendation** |
+| **Host Inventory** | All monitored hosts: IP, groups, state, availability, type |
+| **Filtered alerts** | The noise excluded from the report (and why), for transparency |
+| **Analysis** | Devices probably offline, real problems prioritized by age, **alerts resolved since the last report**, **12-week trend**, distribution by topic |
+| **How it works** | Explanation in simple French, aimed at non-technicians, of how the recommendations are produced |
 
-### 🔎 Suivi de récurrence
+### 🔎 Recurrence tracking
 
-Chaque alerte est suivie de semaine en semaine grâce à un fichier d'état local :
+Each alert is tracked week after week through a local state file:
 
-- **NOUVELLE** (en orange) : première apparition cette semaine
-- **« 5 sem. »** : l'alerte revient depuis 5 rapports consécutifs — elle traîne
-- **Résolue** : présente la semaine dernière, disparue depuis (listée dans l'onglet Analyse)
+- **NEW** (in orange): first appearance this week
+- **“5 wks”**: the alert has been recurring for 5 consecutive reports, it is dragging on
+- **Resolved**: present last week, gone since (listed in the Analysis tab)
 
-C'est ce qui transforme une simple liste d'alertes en véritable outil de pilotage : on voit si la situation s'améliore ou se dégrade.
+This is what turns a plain list of alerts into a real management tool: it shows whether the situation is improving or worsening.
 
 ---
 
-## 🧠 Comment sont produites les recommandations
+## 🧠 How the recommendations are produced
 
-C'est le cœur du projet, et son architecture est volontairement **déterministe d'abord, IA ensuite** :
+This is the heart of the project, and its architecture is deliberately **deterministic first, AI second**:
 
-![Architecture réelle de Zabbix Auto Report](assets/architecture.svg)
+![Actual architecture of Zabbix Auto Report](assets/architecture.svg)
 
-Le script récupère les hôtes, disponibilités, problèmes et triggers via JSON-RPC. Après filtrage, chaque alerte passe d’abord dans le référentiel humain ; Ollama local n’intervient qu’en l’absence de motif connu. Le classeur et l’état de récurrence sont écrits localement, puis l’envoi SMTP peut être désactivé avec `--no-email`.
+The script retrieves hosts, availabilities, problems and triggers via JSON-RPC. After filtering, each alert first goes through the human reference base; the local Ollama instance only intervenes when no known pattern matches. The workbook and the recurrence state are written locally, then the SMTP sending can be disabled with `--no-email`.
 
-### 1. Le référentiel déterministe (source principale)
+### 1. The deterministic reference base (main source)
 
-Une bibliothèque de fiches de réponses **écrites à la main et validées** : disque plein, service arrêté, agent injoignable, machine redémarrée, pression mémoire/CPU, horloge désynchronisée, port réseau tombé, consommable d'imprimante...
+A library of response sheets **written by hand and validated**: disk full, service stopped, agent unreachable, machine rebooted, memory/CPU pressure, clock out of sync, network port down, printer consumable...
 
-Pour chaque alerte, le script :
-1. détecte le motif par mots-clés dans le libellé,
-2. identifie le système concerné (Windows / Linux / switch) pour donner les bonnes commandes,
-3. remplit la fiche avec les vraies valeurs de l'alerte (nom du service, lettre du disque, numéro de port).
+For each alert, the script:
+1. detects the pattern by keywords in the label,
+2. identifies the system concerned (Windows / Linux / switch) to give the right commands,
+3. fills the sheet with the real values of the alert (service name, disk letter, port number).
 
-Même alerte = toujours la même recommandation. Zéro improvisation.
+Same alert = always the same recommendation. Zero improvisation.
 
-### 2. L'IA locale (uniquement pour les cas inconnus)
+### 2. The local AI (only for unknown cases)
 
-Si aucune fiche ne correspond, le script interroge un modèle **Ollama hébergé sur le serveur lui-même** (Qwen2.5 par défaut). Points clés :
+If no sheet matches, the script queries a model **hosted on the server itself via Ollama** (Qwen2.5 by default). Key points:
 
-- 🔒 **Aucune donnée ne quitte l'infrastructure** — pas d'API cloud, conforme RGPD
-- 🎯 L'OS est **imposé** à l'IA par le script (fini les commandes Linux proposées sur un serveur Windows)
-- 🛡️ Consignes strictes : 2 phrases max, diagnostic uniquement, jamais de commande destructrice
-- 🧹 La réponse est nettoyée (markdown supprimé, longueur bornée) avant insertion
+- 🔒 **No data leaves the infrastructure**, no cloud API, GDPR compliant
+- 🎯 The OS is **imposed** on the AI by the script (no more Linux commands suggested on a Windows server)
+- 🛡️ Strict instructions: 2 sentences max, diagnosis only, never a destructive command
+- 🧹 The answer is cleaned (markdown removed, length bounded) before insertion
 
-À chaque exécution, le script affiche la répartition : `12 via référentiel déterministe, 1 via IA locale`. Plus le référentiel s'enrichit, moins l'IA intervient.
+On each run, the script displays the breakdown: `12 via deterministic reference base, 1 via local AI`. The more the reference base grows, the less the AI is involved.
 
 ---
 
 ## 🚀 Installation
 
-### Prérequis
+### Prerequisites
 
 - Python 3.8+
-- Un serveur Zabbix 6.0 à 7.x avec un utilisateur API (lecture seule suffit)
-- Optionnel : [Ollama](https://ollama.com) installé localement pour les recommandations IA (`ollama pull qwen2.5:7b`)
-- Optionnel : un compte SMTP pour l'envoi automatique par email
+- A Zabbix server 6.0 to 7.x with an API user (read-only is enough)
+- Optional: [Ollama](https://ollama.com) installed locally for the AI recommendations (`ollama pull qwen2.5:7b`)
+- Optional: an SMTP account for automatic sending by email
 
-### Étapes
+### Steps
 
 ```bash
-# 1. Cloner le dépôt
+# 1. Clone the repository
 git clone https://github.com/Yukouf/zabbix-auto-report-ai.git
 cd zabbix-auto-report-ai
 
-# 2. Installer la dépendance (unique !)
+# 2. Install the dependency (only one!)
 pip install openpyxl
 
-# 3. Créer votre configuration
+# 3. Create the configuration
 cp .env.example .env
-nano .env        # renseigner URL Zabbix, identifiants, destinataires...
+nano .env        # fill in the Zabbix URL, credentials, recipients...
 
-# 4. Premier test sans envoi d'email
+# 4. First test without sending email
 python3 zabbix_auto_report.py --no-email
 ```
 
-Le rapport `rapport_zabbix_AAAA-MM-JJ.xlsx` est créé dans le dossier configuré.
+The report `rapport_zabbix_YYYY-MM-DD.xlsx` is created in the configured folder.
 
-### Envoi automatique chaque semaine (cron)
+### Automatic sending every week (cron)
 
 ```bash
 crontab -e
-# Tous les lundis à 8h00 :
+# Every Monday at 8:00:
 0 8 * * 1 /usr/bin/python3 /chemin/vers/zabbix_auto_report.py
 ```
 
@@ -130,33 +135,33 @@ crontab -e
 
 ## ⚙️ Configuration
 
-Tout se configure dans le fichier `.env` (jamais dans le code) :
+Everything is configured in the `.env` file (never in the code):
 
-| Variable | Rôle | Exemple |
+| Variable | Role | Example |
 |---|---|---|
-| `ZABBIX_URL` | URL de l'API Zabbix | `https://zabbix.mondomaine.local/api_jsonrpc.php` |
-| `ZABBIX_USER` / `ZABBIX_PASS` | Utilisateur API (lecture seule) | `rapport-auto` |
-| `VERIFY_SSL` | `true` si certificat valide, `false` si auto-signé | `false` |
-| `SMTP_SERVER` / `SMTP_PORT` | Serveur d'envoi (SSL) | `smtp.mondomaine.com` / `465` |
-| `SMTP_USER` / `SMTP_PASS` | Compte SMTP | |
-| `SMTP_FROM` / `SMTP_SENDER` | Expéditeur affiché / adresse d'envoi | |
-| `EMAIL_TO` | Destinataires, séparés par des virgules | `it@acme.com,manager@acme.com` |
-| `COMPANY_NAME` | Nom affiché en en-tête du rapport | `ACME Corp` |
-| `REPORT_DIR` | Dossier de sortie des rapports | `/opt/rapports` |
-| `OLLAMA_URL` / `OLLAMA_MODEL` | IA locale (optionnelle) | `http://127.0.0.1:11434/api/generate` / `qwen2.5:7b` |
-| `NETWORK_KEYWORDS` | Mots-clés identifiant vos switches (noms d'hôtes) | `aruba,cisco,switch` |
-| `EXCLUDED_PATTERNS` | Motifs d'alertes à filtrer, séparés par `;` | |
+| `ZABBIX_URL` | Zabbix API URL | `https://zabbix.mydomain.local/api_jsonrpc.php` |
+| `ZABBIX_USER` / `ZABBIX_PASS` | API user (read-only) | `rapport-auto` |
+| `VERIFY_SSL` | `true` if the certificate is valid, `false` if self-signed | `false` |
+| `SMTP_SERVER` / `SMTP_PORT` | Sending server (SSL) | `smtp.mydomain.com` / `465` |
+| `SMTP_USER` / `SMTP_PASS` | SMTP account | |
+| `SMTP_FROM` / `SMTP_SENDER` | Displayed sender / sending address | |
+| `EMAIL_TO` | Recipients, separated by commas | `it@acme.com,manager@acme.com` |
+| `COMPANY_NAME` | Name displayed in the report header | `ACME Corp` |
+| `REPORT_DIR` | Output folder for the reports | `/opt/rapports` |
+| `OLLAMA_URL` / `OLLAMA_MODEL` | Local AI (optional) | `http://127.0.0.1:11434/api/generate` / `qwen2.5:7b` |
+| `NETWORK_KEYWORDS` | Keywords identifying the switches (host names) | `aruba,cisco,switch` |
+| `EXCLUDED_PATTERNS` | Alert patterns to filter, separated by `;` | |
 
-💡 **Sans Ollama, le script fonctionne quand même** : le référentiel couvre les alertes courantes, et les cas inconnus afficheront simplement une erreur IA dans la colonne recommandation.
+💡 **Without Ollama, the script still works**: the reference base covers the common alerts, and unknown cases will simply display an AI error in the recommendation column.
 
 ---
 
-## 🧩 Adapter le référentiel à votre parc
+## 🧩 Adapting the reference base to the IT fleet
 
-Les fiches de réponses sont dans la variable `COMMAND_TABLE` du script. Chaque fiche = des mots-clés de détection + une réponse par type d'OS :
+The response sheets are in the `COMMAND_TABLE` variable of the script. Each sheet = detection keywords + one answer per OS type:
 
 ```python
-{   # Exemple : certificat expiré
+{   # Example: expired certificate
     "patterns": ["certificate", "cert expires"],
     "commands": {
         "Linux": "Le certificat arrive à expiration.\n1) Vérifier la date :\nopenssl x509 -enddate -noout -in <chemin>\nPuis : renouveler avant l'échéance.",
@@ -164,37 +169,37 @@ Les fiches de réponses sont dans la variable `COMMAND_TABLE` du script. Chaque 
 },
 ```
 
-Ajoutez vos propres fiches au fil des alertes rencontrées : c'est ainsi que le rapport devient de plus en plus autonome.
+Custom sheets can be added as alerts are encountered: this is how the report becomes more and more autonomous.
 
 ---
 
-## 🔐 Sécurité et confidentialité
+## 🔐 Security and confidentiality
 
-- **Aucun identifiant dans le code** : tout passe par `.env` (ignoré par git)
-- **Utilisateur Zabbix en lecture seule** recommandé
-- **IA 100 % locale** : les libellés d'alertes (qui contiennent des noms d'hôtes internes) ne sont jamais envoyés à un service tiers
-- Le fichier d'état `recurrence_state.json` et les rapports générés sont exclus du dépôt
+- **No credentials in the code**: everything goes through `.env` (ignored by git)
+- A **read-only Zabbix user** is recommended
+- **100% local AI**: alert labels (which contain internal host names) are never sent to a third-party service
+- The state file `recurrence_state.json` and the generated reports are excluded from the repository
 
 ---
 
-## 🛠️ Choix techniques
+## 🛠️ Technical choices
 
-| Choix | Pourquoi |
+| Choice | Why |
 |---|---|
-| Bibliothèque standard Python + openpyxl seul | Déploiement trivial sur un serveur de production, pas de chaîne de dépendances à auditer |
-| Référentiel avant IA | Fiabilité et reproductibilité d'abord ; l'IA est un filet, pas un pilote |
-| Compatibilité API 6.0 → 7.x | Détection automatique de version (`selectGroups` vs `selectHostGroups`) |
-| Fichier d'état JSON local | Suivi de récurrence sans base de données |
-| Compteur par semaine ISO | Relancer le script plusieurs fois dans la semaine ne fausse pas les statistiques |
+| Python standard library + openpyxl only | Trivial deployment on a production server, no dependency chain to audit |
+| Reference base before AI | Reliability and reproducibility first; the AI is a safety net, not a driver |
+| API 6.0 → 7.x compatibility | Automatic version detection (`selectGroups` vs `selectHostGroups`) |
+| Local JSON state file | Recurrence tracking without a database |
+| Counter by ISO week | Running the script several times in the week does not distort the statistics |
 
 ---
 
-## 👤 Auteur
+## 👤 Author
 
-**Youssef Guerniou** — [github.com/Yukouf](https://github.com/Yukouf)
+**Youssef Guerniou**, [github.com/Yukouf](https://github.com/Yukouf)
 
-Projet développé dans le cadre d'un déploiement SOC/supervision en production. Voir aussi : [Wazuh-CVE-Alerter](https://github.com/Yukouf/wazuh-cve-alerter-mail).
+Project developed as part of a SOC/monitoring deployment in production. See also: [Wazuh-CVE-Alerter](https://github.com/Yukouf/wazuh-cve-alerter-mail).
 
-## 📄 Licence
+## 📄 License
 
-MIT — libre d'utilisation, y compris en entreprise.
+MIT, free to use, including in a company.
