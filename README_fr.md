@@ -6,7 +6,7 @@
   <a href="README_fr.md">Français</a>
 </p>
 
-> Rapport de supervision hebdomadaire en Excel, généré automatiquement depuis Zabbix, avec recommandations de diagnostic prêtes à l'emploi — sans qu'aucune donnée ne quitte votre serveur.
+> Rapport de supervision hebdomadaire en Excel, généré automatiquement depuis Zabbix, avec recommandations de diagnostic prêtes à l'emploi. Aucune donnée ne quitte votre serveur.
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
 ![Zabbix](https://img.shields.io/badge/Zabbix-6.0%20%E2%86%92%207.x-d40000?logo=zabbix&logoColor=white)
@@ -30,7 +30,7 @@ Ce script répond aux trois, dans un fichier Excel envoyé par email chaque sema
 
 ## 👀 Aperçu
 
-| Page 1 — Rapport hebdo | Onglet Analyse |
+| Page 1 : rapport hebdo | Onglet Analyse |
 |---|---|
 | ![Rapport hebdo](docs/screenshot_rapport.png) | ![Analyse](docs/screenshot_analyse.png) |
 
@@ -55,7 +55,7 @@ Le fichier Excel généré comporte **5 onglets** :
 Chaque alerte est suivie de semaine en semaine grâce à un fichier d'état local :
 
 - **NOUVELLE** (en orange) : première apparition cette semaine
-- **« 5 sem. »** : l'alerte revient depuis 5 rapports consécutifs — elle traîne
+- **« 5 sem. »** : l'alerte revient depuis 5 rapports consécutifs, elle traîne
 - **Résolue** : présente la semaine dernière, disparue depuis (listée dans l'onglet Analyse)
 
 C'est ce qui transforme une simple liste d'alertes en véritable outil de pilotage : on voit si la situation s'améliore ou se dégrade.
@@ -85,7 +85,7 @@ Même alerte = toujours la même recommandation. Zéro improvisation.
 
 Si aucune fiche ne correspond, le script interroge un modèle **Ollama hébergé sur le serveur lui-même** (Qwen2.5 par défaut). Points clés :
 
-- 🔒 **Aucune donnée ne quitte l'infrastructure** — pas d'API cloud, conforme RGPD
+- 🔒 **Aucune donnée ne quitte l'infrastructure** : pas d'API cloud, conforme RGPD
 - 🎯 L'OS est **imposé** à l'IA par le script (fini les commandes Linux proposées sur un serveur Windows)
 - 🛡️ Consignes strictes : 2 phrases max, diagnostic uniquement, jamais de commande destructrice
 - 🧹 La réponse est nettoyée (markdown supprimé, longueur bornée) avant insertion
@@ -196,10 +196,10 @@ Ajoutez vos propres fiches au fil des alertes rencontrées : c'est ainsi que le 
 
 ## 👤 Auteur
 
-**Youssef Guerniou** — [github.com/Yukouf](https://github.com/Yukouf)
+**Youssef Guerniou** : [github.com/Yukouf](https://github.com/Yukouf)
 
 Projet développé dans le cadre d'un déploiement SOC/supervision en production. Voir aussi : [Wazuh-CVE-Alerter](https://github.com/Yukouf/wazuh-cve-alerter-mail).
 
 ## 📄 Licence
 
-MIT — libre d'utilisation, y compris en entreprise.
+MIT. Libre d'utilisation, y compris en entreprise.
