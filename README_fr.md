@@ -14,8 +14,6 @@
 ![Dépendance](https://img.shields.io/badge/D%C3%A9pendance-openpyxl%20uniquement-2E7D32)
 ![Licence](https://img.shields.io/badge/Licence-MIT-lightgrey)
 
-![Rapport hebdo](docs/screenshot_rapport.png)
-
 ---
 
 ## 🎯 Le problème résolu
