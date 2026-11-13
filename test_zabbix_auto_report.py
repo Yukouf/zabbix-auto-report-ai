@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Tests isolés pour zabbix_auto_report.py — AUCUN appel réseau réel.
+Tests isolés pour zabbix_auto_report.py - AUCUN appel réseau réel.
 
 On ne contacte ni Zabbix, ni Ollama, ni SMTP : les fonctions réseau
 (urllib.request.urlopen, ask_ollama, get_auth_token…) ne sont jamais
